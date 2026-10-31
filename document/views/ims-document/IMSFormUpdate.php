@@ -1,0 +1,389 @@
+<?php
+
+use yii\helpers\Html;
+use yii\widgets\ActiveForm;
+
+$form = ActiveForm::begin(['id' => 'ims-document',
+            'enableClientValidation' => true,
+            'options' => [
+                'data-pjax' => '1',
+                'enctype' => 'multipart/form-data',
+        ]]);
+
+$setadManagementUnitsArray = isset($imsDocumentModel->companyIdRef) ? \yii\helpers\ArrayHelper::map(\app\modules\OBS\models\Company::setadManagementUnits($imsDocumentModel->companyIdRef), 'obsId', 'obsTitle') : [];
+?>
+
+<style>
+    .hidden-widget {
+        display: none;
+    }
+</style>
+
+<div class="row"
+     style="background-color: rgb(228, 246, 253);margin-left: -20px;margin-right: -20px;margin-top: -15px;margin-bottom: -15px;">
+    <br>
+
+    <div class="col-md-12 col-lg-12">
+        <!--        <div class="col-lg-6 col-md-6" style="padding-left: 5px;padding-right: 0px;margin-left: -4px;">
+        <?php
+        echo $form->field($imsDocumentModel, 'preparatorUnit')
+                ->widget(kartik\widgets\Select2::className(), ['data' => $obsArray]);
+        ?>
+                </div>-->
+        <div class="col-lg-12 col-md-12" style="padding-left: 0px;padding-right: 0px;">
+            <?=
+                    $form->field($imsDocumentModel, 'companyIdRef')
+                    ->widget(kartik\select2\Select2::className(), ['data' => $companyArray, 'disabled' => true]);
+            ?>
+        </div>
+    </div>
+    <div class="col-md-12 col-lg-12">
+        <div class="col-lg-6 col-md-6" style="padding-left: 5px;padding-right: 0px;margin-left: -4px;">
+            <?=
+            $form->field($imsDocumentModel, 'processCode')->widget(kartik\select2\Select2::className(), [
+                'data' => $processCodeArray,
+                'disabled' => true,
+                'options' => [
+                    'placeholder' => '-- Select Process Code --',
+                ],
+            ]);
+            ?>
+        </div>
+        <div class="col-lg-6 col-md-6" style="padding-left: 5px;padding-right: 0px;">
+            <?=
+            $form->field($imsDocumentModel, 'type')->widget(kartik\select2\Select2::className(), [
+                'data' => $imsTypeArray,
+                'disabled' => true,
+                'options' => [
+                    'placeholder' => '-- Select IMS Type --',
+                ],
+            ]);
+            ?>
+        </div>
+
+    </div>
+
+    <div class="col-md-12 col-lg-12">
+    <div class="col-lg-12 col-md-12" style="padding-left: 0px;padding-right: 0px;">
+        <?=
+                $form->field($imsDocumentModel, 'mainUnitObsIdRef')
+                ->widget(kartik\select2\Select2::className(), ['data' => $setadManagementUnitsArray, 'options' => ['placeholder' => 'انتخاب واحد اصلی']]);
+        ?>
+    </div>
+</div>
+
+    <div class="col-md-12 col-lg-12">
+        <?= $form->field($imsDocumentModel, 'title')->textInput(["list" => "suggestionTitle", "autoComplete" => "off"]) ?>
+    </div>
+
+
+    <datalist id="suggestionTitle">
+        <?php
+        foreach ($titleArray as $value) {
+            echo '<option value="' . $value . '">';
+        }
+        ?>
+    </datalist>
+
+    <div class="col-lg-12 col-md-12">
+        <?=
+        $form->field($imsDocumentModel, 'mainDocumentID')->widget(kartik\widgets\Select2::className(), [
+            'data' => $mainIMSArray,
+            'hideSearch' => FALSE,
+            'options' => [
+                'placeholder' => '--Select Main Document--',
+                'multiple' => false,
+            ],
+            'pluginOptions' => [
+                'allowClear' => true
+            ],
+        ]);
+        ?>
+    </div>
+
+    <div class="col-md-12" >
+        <?=
+        $form->field($imsDocumentModel, 'clause')->widget(kartik\widgets\Select2::className(), [
+            'data' => $clauseArray,
+            'options' => [
+                'placeholder' => '--Select--',
+                'multiple' => true,
+                'disabled' => $imsDocumentModel->mainDocumentID > 0,
+            ],
+        ])
+        ?>
+    </div>
+
+    <div class="col-md-12 col-lg-12">
+        <div class="col-lg-6 col-md-6" style="padding-left: 5px;padding-right: 0px;margin-left: -4px;">
+            <?= $form->field($imsDocumentModel, 'code')->textInput(["list" => "suggestionCode", "autoComplete" => "off"]); ?>
+        </div>
+        <div class="col-lg-6 col-md-6" style="padding-left: 5px;padding-right: 0px;">
+            <?= $form->field($imsDocumentModel, 'revisionNumber')->textInput(['disabled' => 'disabled']); ?>
+        </div>
+    </div>
+
+    <datalist id="suggestionCode">
+        <?php
+        foreach ($codeListArray as $value) {
+            echo '<option value="' . $value . '">';
+        }
+        ?>
+    </datalist>
+
+    <div class="row ml5 mr5" >
+        <div class="col-lg-8 col-md-8" >
+            <?= $form->field($imsDocumentModel, 'autoCode')->textInput(['class' => 'form-control input-sm', 'tabindex' => '100', 'disabled' => !($isCandoAdmin) ? 'disabled' : '']) ?>
+        </div>
+        <div class="col-lg-4 col-md-4" style="padding-left: 0px;padding-right: 5px;">
+            <?= $form->field($imsDocumentModel, 'expireDate')->textInput(['class' => 'form-control input-sm', 'disabled' => 'disabled']) ?>
+        </div>
+    </div>
+
+
+    <div class="col-lg-12 col-md-12">
+        <?php if (in_array('preparationDate', $visibleField)) { ?>
+            <div class="col-lg-4 col-md-4" style="padding-left: 0px;padding-right: 5px;">
+                <label class="control-label" for=""><?php echo Yii::t('document', 'Preparation Date Hijri'); ?></label>
+                <?=
+                Html::input("text", "", "", [
+                    "id" => "imsdocument-preparationHijriDate",
+                    "class" => "form-control input-sm datepicker-fa",
+                    "placeholder" => "example 1395/02/02",
+                ]);
+                ?>
+            </div>
+            <div class="hidden-widget col-lg-4 col-md-4" style="padding-left: 5px;padding-right: 0px;">
+                <?= $form->field($imsDocumentModel, 'preparationDate')->widget(kartik\widgets\DatePicker::className()); ?>
+            </div>
+        <?php } if (in_array('revisionDate', $visibleField)) { ?>
+            <div class="col-lg-4 col-md-4" style="padding-left: 0px;padding-right: 5px;">
+                <label class="control-label" for=""><?php echo Yii::t('document', 'Revision Date Hijri'); ?></label>
+                <?=
+                Html::input("text", "", "", [
+                    "id" => "imsdocument-revisionHijriDate",
+                    "class" => "form-control input-sm datepicker-fa",
+                    "placeholder" => "example 1395/02/02",
+                    'disabled' => $imsDocumentModel->revisionNumber == 0
+                ]);
+                ?>
+            </div>
+            <div class="hidden-widget col-lg-4 col-md-4" style="padding-left: 5px;padding-right: 0px;">
+                <?= $form->field($imsDocumentModel, 'revisionDate')->widget(kartik\widgets\DatePicker::className()); ?>
+            </div>
+
+        <?php } if (in_array('effectiveDate', $visibleField)) { ?>
+            <div class="col-lg-4 col-md-4" style="padding-left: 0px;padding-right: 0px;">
+                <label class="control-label" for=""><?php echo Yii::t('document', 'Effective Date Hijri'); ?></label>
+                <?=
+                Html::input("text", "", "", [
+                    "id" => "imsdocument-effectiveHijriDate",
+                    "class" => "form-control input-sm datepicker-fa",
+                    "placeholder" => "example 1395/02/02",
+                ]);
+                ?>
+            </div>
+            <div class="hidden-widget col-lg-4 col-md-4" style="padding-left: 5px;padding-right: 0px;">
+                <?= $form->field($imsDocumentModel, 'effectiveDate')->widget(kartik\widgets\DatePicker::className()); ?>
+            </div>
+        <?php } ?>
+    </div>
+
+    <div class="col-lg-12 col-md-12">
+
+        <div class="col-lg-6 col-md-6" style="padding-left: 0px;padding-right: 0px;">
+            <?=
+            $form->field($imsDocumentModel, 'reportObject')->widget(\kartik\widgets\FileInput::className(), [
+                'pluginOptions' => [
+                    'showPreview' => false,
+                    'showUpload' => false,
+                    'allowedFileExtensions' => [
+                        'xls', 'xlsx', 'xlsb', 'pdf', 'rar', 'zip', 'doc', 'docx', 'jpg', 'jpeg', 'bmp', 'png',
+                    ],
+                ],
+                'options' => ['accept' => '*']
+            ])
+            ?>
+        </div>
+
+        <div class="col-lg-6 col-md-6" style="padding-left: 0px;padding-right: 0px;">
+            <?=
+            $form->field($imsDocumentModel, 'nativeObject')->widget(\kartik\widgets\FileInput::className(), [
+//                    'model'=>$imsDocumentModel,
+//                    'attribute'=>"nativeObject",
+                'pluginOptions' => [
+                    'showPreview' => false,
+                    'showUpload' => false,
+                    'allowedFileExtensions' => [
+                        'xls', 'xlsx', 'xlsb', 'pdf', 'rar', 'zip', 'doc', 'docx', 'jpg', 'jpeg', 'bmp', 'png',
+                    ],
+                ],
+                'options' => ['accept' => '*']
+            ])
+            ?>
+        </div>
+
+
+    </div>
+    <!--    <div class="col-md-12 col-lg-12" style="margin-left: -15px;">
+            <div class="col-md-10 col-lg-10">
+    <?php
+    echo $form->field($imsDocumentModel, 'relatedIMSDocument')->widget(kartik\widgets\Select2::className(), [
+        'data' => $relatedIMSArray,
+        'id' => "myRelated",
+        'hideSearch' => FALSE,
+        'options' => [
+            'placeholder' => '--Select IMS--',
+            'multiple' => TRUE,
+        ],
+    ]);
+    ?>
+            </div>
+            <div class="col-lg-2 col-md-2" style="margin-top: 23px;margin-left: -14px;">
+    <?=
+    Html::a('<i class="fa-plus"></i>&nbsp' . Yii::t('document', 'Add Keyword'), '#', [
+        'data-url' => Yii::$app->urlManager->createAbsoluteUrl(['document/ims-document/keyword-list', "id" => $imsDocumentModel->id]),
+        'onclick' => 'showImsDocumentKeywordDetail(this)',
+        'class' => 'btn btn-sm btn-success',
+    ]);
+    ?>
+            </div>
+        </div>-->
+
+    <div class="col-md-12 col-lg-12">
+        <div class="col-lg-9 col-md-9"
+             style="padding-left: 5px;padding-right: 0px;">
+                 <?=
+                 $form->field($imsDocumentModel, 'relatedOBS')->widget(kartik\widgets\Select2::className(), [
+                     'data' => $processCodeArray,
+                     'options' => [
+                         'placeholder' => '--Code Related--',
+                         'multiple' => TRUE,
+                     ],
+                 ]);
+                 ?>
+        </div>
+        <div class="col-lg-3 col-md-3" >
+            <?= $form->field($imsDocumentModel, 'status')->dropDownList($imsDocumentModel->statusArray(), ['prompt' => '--Select Status--']) ?>
+        </div>
+    </div>
+</div>
+
+<br>
+<div class="col-lg-12 col-md-12">
+    <div class="form-group ">
+        <?= Html::submitButton('<i class="fa-edit"></i> ' . Yii::t('document', 'Update'), ['class' => 'btn btn-sm btn-primary']) ?>
+    </div>
+</div>
+
+
+</div>
+
+<?php ActiveForm::end(); ?>
+<?php
+$js = '$(".field-imsdocument-reportobject .file-caption-name").html("' . $imsDocumentModel->reportfile . '");';
+$js .= '$(".field-imsdocument-nativeobject .file-caption-name").html("' . $imsDocumentModel->nativefile . '");';
+$this->registerJs($js, \yii\web\View::POS_READY);
+?>
+
+<script>
+    function btnGenerateDocumentCode(obj) {
+        if (!$(obj).is('[disabled=disabled]')) {
+            ajaxProgressLoader('show', '.popup-box');
+            var url = $(obj).attr('data-url');
+            var cid = $('#imsdocument-companyidref').val();
+            var processCode = $('#imsdocument-processcode').val();
+            var type = $('#imsdocument-type').val();
+            var pid = $('#imsdocument-parentid').val();
+            $.ajax({
+                url: url,
+                data: {
+                    "cid": cid,
+                    "pcid": processCode,
+                    "tid": type,
+                    "pid": pid,
+                }
+            }).done(function (data) {
+                if (data == null) {
+                    $('#btnGenerateDocumentCode').attr('disabled', 'disabled');
+                }
+                $('#imsdocument-autocode').val(data);
+            }).error(function () {
+                showMsgBoxInBottomRight('Error on connecting to server. <br />Plase login again and try later!', 'error');
+                ajaxProgressLoader('hide', '.popup-box');
+                return false;
+            });
+            return false;
+        }
+    }
+
+    $('#imsdocument-companyidref').change(function () {
+        var companyId = $(this).val();
+        ajaxProgressLoader('show', '#personal-specification');
+        var url = '<?= Yii::$app->urlManager->createAbsoluteUrl(['obs/company/setad-management-units']) ?>' + '&companyId=' + companyId;
+        $.ajax({
+            url: url,
+            dataType: "json"
+        }).done(function (data) {
+            $('#imsdocument-mainunitobsidref').html(data);
+        }).error(function () {
+            showMsgBoxInBottomRight(
+                    "Please select a valid element!",
+                    "warning"
+                    );
+        });
+        ajaxProgressLoader('hide', '#personal-specification');
+    });
+
+    $(document).load(function () {
+        $('.hidden-xs').html('');
+    });
+
+
+    $(document).ready(function () {
+        $("#imsdocument-maindocumentid").change(function () {
+            let mainDoc = $(this).val();
+            if (mainDoc > 0) {
+                $("#imsdocument-clause").prop('disabled', true).trigger('change');
+            } else {
+                $("#imsdocument-clause").prop('disabled', false).trigger('change');
+            }
+        });
+
+        if ($("#imsdocument-effectivedate").val() != "") {
+            $('#imsdocument-effectiveHijriDate').val(GregorianToShamsi($("#imsdocument-effectivedate").val()));
+        }
+        $('#imsdocument-effectiveHijriDate').change(function () {
+            $('#imsdocument-effectivedate').val(ShamsiToGregorian($(this).val()));
+        });
+        $('#imsdocument-effectivedate').change(function () {
+            $('#imsdocument-effectiveHijriDate').val(GregorianToShamsi($(this).val()));
+        });
+
+        if ($("#imsdocument-preparationdate").val() != "") {
+            $('#imsdocument-preparationHijriDate').val(GregorianToShamsi($("#imsdocument-preparationdate").val()));
+        }
+        $('#imsdocument-preparationHijriDate').change(function () {
+            $('#imsdocument-preparationdate').val(ShamsiToGregorian($(this).val()));
+        });
+        $('#imsdocument-preparationdate').change(function () {
+            $('#imsdocument-preparationHijriDate').val(GregorianToShamsi($(this).val()));
+        });
+
+        if ($("#imsdocument-revisiondate").val() != "") {
+            $('#imsdocument-revisionHijriDate').val(GregorianToShamsi($("#imsdocument-revisiondate").val()));
+        }
+        $('#imsdocument-revisionHijriDate').change(function () {
+            $('#imsdocument-revisiondate').val(ShamsiToGregorian($(this).val()));
+        });
+        $('#imsdocument-revisiondate').change(function () {
+            $('#imsdocument-revisionHijriDate').val(GregorianToShamsi($(this).val()));
+        });
+
+        $('.datepicker-fa').each(function () {
+            $(this).datepicker({dateFormat: 'yy/mm/dd'});
+        });
+    });
+
+</script>
+

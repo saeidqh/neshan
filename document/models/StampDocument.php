@@ -95,13 +95,33 @@ public function getConfigDoc()
             [['SerialNumber'], 'integer'],
             [['StampTitle', 'StampTypeIDRef', 'RequestDate', 'ObsIDRef'], 'required'],
             [['internalScopeIds', 'externalScopeIds'], 'safe'],
-            ['StampFile','file','extensions' => ['png', 'jpg', 'jpeg'],'maxSize' => 500 * 1024,'skipOnEmpty' => false,'on' => 'default', // یا سناریوی create
-                'when' => function ($model) {
-                    return $model->isNewRecord;
-                },
-            ],
-            // برای update همیشه اختیاری
-            ['StampFile','file', 'extensions' => ['png', 'jpg', 'jpeg'],'maxSize' => 500 * 1024,'skipOnEmpty' => true,],
+[
+            'StampFile',
+            'file',
+            'extensions' => ['png', 'jpg', 'jpeg'],
+            'maxSize' => 500 * 1024,
+            'skipOnEmpty' => false,
+            'tooBig' => 'حداکثر حجم تصویر ۵۰۰ کیلوبایت است.',
+            'wrongExtension' => 'فقط فایل‌های png، jpg و jpeg مجاز هستند.',
+            'when' => function ($model) {
+                return $model->isNewRecord;
+            },
+            'whenClient' => "function (attribute, value) {
+                // اگر فیلد StampId وجود داشته باشد یعنی در حال ویرایش هستیم
+                return !$('#stampdocument-stampid').length || $('#stampdocument-stampid').val() === '';
+            }",
+        ],
+
+        // در ویرایش همیشه اختیاری
+        [
+            'StampFile',
+            'file',
+            'extensions' => ['png', 'jpg', 'jpeg'],
+            'maxSize' => 500 * 1024,
+            'skipOnEmpty' => true,
+            'tooBig' => 'حداکثر حجم تصویر ۵۰۰ کیلوبایت است.',
+            'wrongExtension' => 'فقط فایل‌های png، jpg و jpeg مجاز هستند.',
+        ],
             ['FinalStampFile', 'file', 'extensions' => 'png, jpg, jpeg', 'maxSize' => 500000, 'skipOnEmpty' => true],
             [['DestroyDate'], 'required', 'on' => 'destroy'],
             [['DestroyDate'], 'validateHijriDate', 'on' => 'destroy'],
@@ -199,77 +219,87 @@ public function beforeValidate()
         ];
     }
 
-    public function saveStamp($internalScopeIds, $externalScopeIds)
-    {
-        $transaction = Yii::$app->db->beginTransaction();
-        try {
-            if ($this->save()) {
-                $currentInternalScopes = $this->internalScope;
-                $currentExternalScopes = $this->externalScope;
-
-                foreach ($currentInternalScopes as $scope) {
-                    if ($internalScopeIds == null || !in_array($scope->ScopeId, $internalScopeIds)) {
-                        StampScopeDocument::deleteAll([
-                            'StampIDRef' => $this->StampId,
-                            'ScopeIDRef' => $scope->ScopeId
-                        ]);
-                    }
+public function saveStamp($internalScopeIds, $externalScopeIds)
+{
+    $transaction = Yii::$app->db->beginTransaction();
+    try {
+        if ($this->save()) {
+            // مدیریت Scopeهای داخلی
+            $currentInternalScopes = $this->internalScope;
+            foreach ($currentInternalScopes as $scope) {
+                if ($internalScopeIds == null || !in_array($scope->ScopeId, $internalScopeIds)) {
+                    StampScopeDocument::deleteAll([
+                        'StampIDRef' => $this->StampId,
+                        'ScopeIDRef' => $scope->ScopeId
+                    ]);
                 }
-
-                if ($internalScopeIds != null) {
-                    foreach ($internalScopeIds as $internalScopeId) {
-                        $internalScope = StampScopeDocument::find()->where([
-                            'StampIDRef' => $this->StampId,
-                            'ScopeIDRef' => $internalScopeId
-                        ])->one();
-                        if (!$internalScope) {
-                            $internalScope = new StampScopeDocument();
-                            $internalScope->StampIDRef = $this->StampId;
-                            $internalScope->ScopeIDRef = $internalScopeId;
-                            $internalScope->save(false);
-                        }
-                    }
-                }
-
-                foreach ($currentExternalScopes as $scope) {
-                    if ($externalScopeIds == null || !in_array($scope->ScopeId, $externalScopeIds)) {
-                        StampScopeDocument::deleteAll([
-                            'StampIDRef' => $this->StampId,
-                            'ScopeIDRef' => $scope->ScopeId
-                        ]);
-                    }
-                }
-
-                if ($externalScopeIds != null) {
-                    foreach ($externalScopeIds as $externalScopeId) {
-                        $externalScope = StampScopeDocument::find()->where([
-                            'StampIDRef' => $this->StampId,
-                            'ScopeIDRef' => $externalScopeId
-                        ])->one();
-                        if (!$externalScope) {
-                            $externalScope = new StampScopeDocument();
-                            $externalScope->StampIDRef = $this->StampId;
-                            $externalScope->ScopeIDRef = $externalScopeId;
-                            $externalScope->save(false);
-                        }
-                    }
-                }
-
-                $this->upload();
-                $this->refresh();
-            } else {
-                $transaction->rollBack();
-                return false;
             }
 
-            $transaction->commit();
-            return true;
-        } catch (\Exception $exc) {
+            if ($internalScopeIds != null) {
+                foreach ($internalScopeIds as $internalScopeId) {
+                    $internalScope = StampScopeDocument::find()->where([
+                        'StampIDRef' => $this->StampId,
+                        'ScopeIDRef' => $internalScopeId
+                    ])->one();
+
+                    if (!$internalScope) {
+                        $internalScope = new StampScopeDocument();
+                        $internalScope->StampIDRef = $this->StampId;
+                        $internalScope->ScopeIDRef = $internalScopeId;
+                        $internalScope->save(false);
+                    }
+                }
+            }
+
+            // مدیریت Scopeهای خارجی
+            $currentExternalScopes = $this->externalScope;
+            foreach ($currentExternalScopes as $scope) {
+                if ($externalScopeIds == null || !in_array($scope->ScopeId, $externalScopeIds)) {
+                    StampScopeDocument::deleteAll([
+                        'StampIDRef' => $this->StampId,
+                        'ScopeIDRef' => $scope->ScopeId
+                    ]);
+                }
+            }
+
+            if ($externalScopeIds != null) {
+                foreach ($externalScopeIds as $externalScopeId) {
+                    $externalScope = StampScopeDocument::find()->where([
+                        'StampIDRef' => $this->StampId,
+                        'ScopeIDRef' => $externalScopeId
+                    ])->one();
+
+                    if (!$externalScope) {
+                        $externalScope = new StampScopeDocument();
+                        $externalScope->StampIDRef = $this->StampId;
+                        $externalScope->ScopeIDRef = $externalScopeId;
+                        $externalScope->save(false);
+                    }
+                }
+            }
+
+            // فقط در صورتی که فایل جدیدی آپلود شده باشد، upload را صدا بزن
+            if (
+                $this->StampFile instanceof \yii\web\UploadedFile ||
+                $this->FinalStampFile instanceof \yii\web\UploadedFile
+            ) {
+                $this->upload();
+            }
+
+            $this->refresh();
+        } else {
             $transaction->rollBack();
-            echo $exc->getTraceAsString();
             return false;
         }
+
+        $transaction->commit();
+        return true;
+    } catch (\Exception $exc) {
+        $transaction->rollBack();
+        Yii::error($exc->getMessage() . "\n" . $exc->getTraceAsString(), __METHOD__);
+        return false;
     }
+}
 
     public function setVerifyStatus(): bool
     {

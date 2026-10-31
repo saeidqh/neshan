@@ -65,6 +65,7 @@ $form = ActiveForm::begin([
     ],
 ]);
 ?>
+<?= $form->field($stampModel, 'StampId')->hiddenInput(['id' => 'stampdocument-stampid'])->label(false) ?>
 
 <div class="row" style="direction: rtl">
     <div class='col-md-3'>
